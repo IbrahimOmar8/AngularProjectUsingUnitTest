@@ -1,0 +1,20 @@
+
+
+
+<h2>Example body text</h2>
+<p>Nullam quis risus eget <a href="#">urna mollis ornare</a> .</p>
+<p><small>This line of text is meant to be treated as fine print.</small></p>
+<button id="ButTestID" type="button" (click)="clicked()" class="btn btn-danger">Click Me</button>
+
+    <span>{{message}}</span>
+    <!-- <h2 ><span id="test">{{message| titlecase}}</span> Details</h2> -->
+
+    <br/>
+    <br/>
+    <br/>
+
+    <h2><span id="testspan">{{name | titlecase}}</span> </h2>
+    <div>
+      <label for="name">name: </label>
+      <input id="name" [(ngModel)]="name" placeholder="name" />
+    </div>
