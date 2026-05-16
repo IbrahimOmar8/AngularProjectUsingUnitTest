@@ -14,6 +14,19 @@
   height: auto;
   transform-origin: top left;
   user-select: none;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+#figma-compare-overlay-root.fc-locked .fc-overlay-img { cursor: default; pointer-events: none; }
+
+#figma-compare-overlay-root .fc-tag { font-weight: 600; }
+#figma-compare-overlay-root .fc-hint { color: rgba(255,255,255,0.6); }
+
+#figma-compare-grid-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483645;
   pointer-events: none;
 }
 

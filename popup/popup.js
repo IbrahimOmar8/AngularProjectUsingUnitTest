@@ -31,6 +31,10 @@ document.getElementById('toggleOverlay').addEventListener('click', async () => {
   try { await send({ type: 'TOGGLE_OVERLAY' }); } catch (e) { alert(e.message); }
 });
 
+document.getElementById('toggleGrid').addEventListener('click', async () => {
+  try { await send({ type: 'TOGGLE_GRID' }); } catch (e) { alert(e.message); }
+});
+
 document.getElementById('toggleMeasure').addEventListener('click', async () => {
   try { await send({ type: 'TOGGLE_MEASURE' }); } catch (e) { alert(e.message); }
 });

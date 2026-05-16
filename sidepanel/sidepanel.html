@@ -22,6 +22,7 @@
     <div class="tabs" role="tablist">
       <button class="tab active" data-tab="upload" role="tab">Upload image</button>
       <button class="tab" data-tab="figma" role="tab">Figma API</button>
+      <button class="tab" data-tab="library" role="tab">Library</button>
     </div>
 
     <div class="tab-panel" data-panel="upload">
@@ -53,15 +54,42 @@
       </label>
       <button id="fetchFigma" class="primary">Fetch from Figma</button>
     </div>
+
+    <div class="tab-panel hidden" data-panel="library">
+      <div class="row gap small-row">
+        <input id="designName" type="text" placeholder="Name (e.g. Home / Hero)" class="grow" />
+        <button id="saveDesign">Save current</button>
+      </div>
+      <div id="libraryList" class="library"></div>
+      <p class="muted small">Library is saved on this device only. Stores up to 24 designs.</p>
+    </div>
   </section>
 
   <section class="card">
     <h2>2. Capture the live UI</h2>
     <div class="row gap">
-      <button id="captureBtn" class="primary">Capture current tab</button>
+      <button id="captureBtn" class="primary">Capture viewport</button>
+      <button id="captureFullPage">Full page</button>
       <button id="reloadCapture" class="ghost" disabled>Re-capture</button>
     </div>
     <p class="muted small" id="captureStatus">No capture yet.</p>
+
+    <div class="row gap small-row">
+      <label class="field">
+        <span>Viewport preset</span>
+        <select id="viewportPreset">
+          <option value="">— size —</option>
+          <option value="375">Mobile · 375</option>
+          <option value="414">Mobile L · 414</option>
+          <option value="768">Tablet · 768</option>
+          <option value="1024">Laptop · 1024</option>
+          <option value="1280">Desktop · 1280</option>
+          <option value="1440">Desktop L · 1440</option>
+          <option value="1920">Full HD · 1920</option>
+        </select>
+      </label>
+      <button id="applyViewport">Resize window</button>
+    </div>
   </section>
 
   <section class="card">
@@ -71,6 +99,7 @@
       <button class="tab active" data-mode="overlay">Overlay</button>
       <button class="tab" data-mode="side">Side by side</button>
       <button class="tab" data-mode="diff">Pixel diff</button>
+      <button class="tab" data-mode="palette">Palette</button>
     </div>
 
     <div class="mode-panel" data-mode-panel="overlay">
@@ -100,14 +129,16 @@
           <input id="offsetY" type="number" value="0" />
         </label>
         <label class="field">
-          <span>Scale</span>
+          <span>Scale %</span>
           <input id="overlayScale" type="number" value="100" min="10" max="400" />
         </label>
       </div>
       <div class="row gap">
         <button id="pushOverlay" class="primary">Show on page</button>
         <button id="hideOverlay" class="ghost">Hide</button>
+        <button id="resetOverlay" class="ghost">Reset position</button>
       </div>
+      <p class="muted small">Tip: hold <kbd>Alt</kbd> and drag the overlay on the page to nudge it. <kbd>Alt</kbd>+scroll to zoom.</p>
     </div>
 
     <div class="mode-panel hidden" data-mode-panel="side">
@@ -121,6 +152,9 @@
           <div class="thumb" id="thumbLive"><span class="muted small">No capture</span></div>
         </figure>
       </div>
+      <div class="row gap">
+        <button id="exportSide">Export side-by-side PNG</button>
+      </div>
     </div>
 
     <div class="mode-panel hidden" data-mode-panel="diff">
@@ -133,19 +167,65 @@
       </div>
       <div class="thumb tall" id="diffOutput"><span class="muted small">Run a diff to see differences</span></div>
       <p class="muted small" id="diffStats"></p>
+      <div class="row gap">
+        <button id="exportDiff" disabled>Export diff PNG</button>
+        <button id="exportReport" disabled>Export report</button>
+      </div>
+    </div>
+
+    <div class="mode-panel hidden" data-mode-panel="palette">
+      <p class="muted small">Dominant colors from the design — click a swatch to copy hex.</p>
+      <div id="paletteSwatches" class="palette"></div>
+      <button id="extractPalette">Extract palette</button>
     </div>
   </section>
 
   <section class="card">
-    <h2>4. Measure on page</h2>
+    <h2>4. Layout grid</h2>
+    <div class="row gap small-row">
+      <label class="field">
+        <span>Cell px</span>
+        <input id="gridSize" type="number" value="8" min="2" max="64" />
+      </label>
+      <label class="field">
+        <span>Major every</span>
+        <input id="gridMajor" type="number" value="8" min="1" max="32" />
+      </label>
+      <label class="field">
+        <span>Color</span>
+        <input id="gridColor" type="color" value="#5b5bd6" />
+      </label>
+      <label class="field">
+        <span>Opacity</span>
+        <input id="gridOpacity" type="range" min="0" max="100" value="25" />
+      </label>
+    </div>
+    <div class="row gap">
+      <button id="gridToggle" class="primary">Toggle grid</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>5. Measure on page</h2>
     <p class="muted small">Hover elements to see padding, margin and size. Click two points to measure distance.</p>
     <div class="row gap">
       <button id="measureToggle" class="primary">Enable measure tool</button>
     </div>
   </section>
 
+  <section class="card">
+    <h2>Shortcuts</h2>
+    <ul class="shortcuts muted small">
+      <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> — toggle overlay</li>
+      <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> — toggle measure</li>
+      <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> — toggle grid</li>
+      <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> — open this panel</li>
+    </ul>
+    <p class="muted small">Customize at <code>chrome://extensions/shortcuts</code>.</p>
+  </section>
+
   <footer class="topbar">
-    <span class="muted small">v1.0.0</span>
+    <span class="muted small">v1.1.0</span>
     <span class="muted small" id="statusBar"></span>
   </footer>
 

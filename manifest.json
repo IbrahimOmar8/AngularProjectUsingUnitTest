@@ -1,15 +1,35 @@
 {
   "manifest_version": 3,
   "name": "Figma UI Compare",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Compare your live web UI against a Figma design with overlay, side-by-side, pixel-diff and measurement tools.",
   "permissions": [
     "activeTab",
     "scripting",
     "storage",
+    "unlimitedStorage",
     "sidePanel",
-    "tabs"
+    "tabs",
+    "downloads"
   ],
+  "commands": {
+    "toggle-overlay": {
+      "suggested_key": { "default": "Alt+Shift+O" },
+      "description": "Toggle the Figma overlay on the current page"
+    },
+    "toggle-measure": {
+      "suggested_key": { "default": "Alt+Shift+M" },
+      "description": "Toggle the measure tool"
+    },
+    "toggle-grid": {
+      "suggested_key": { "default": "Alt+Shift+G" },
+      "description": "Toggle the layout grid"
+    },
+    "open-panel": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Open the compare side panel"
+    }
+  },
   "host_permissions": [
     "https://api.figma.com/*",
     "https://s3-alpha.figma.com/*",
