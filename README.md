@@ -17,10 +17,11 @@ Browser extension (Chrome / Edge, Manifest V3) that helps developers match their
 ### Compare
 - **Overlay** the design over the live page with opacity, blend mode (Difference, Multiply, Screen, Overlay), offset and scale controls.
 - **Drag‑to‑position**: hold <kbd>Alt</kbd> and drag the overlay directly on the page; <kbd>Alt</kbd>+scroll to zoom. The side panel inputs sync live.
-- **Lock / Reset** controls in the on‑page toolbar.
-- **Side‑by‑side** thumbnails of design and capture, exportable as a single PNG.
-- **Pixel diff** — canvas‑based diff with an adjustable threshold; reports differing pixel count and ratio.
-- **Palette** — extract the dominant colors from the design; click a swatch to copy its hex.
+- **Lock / Reset / Fit‑to‑width** controls; *Fit to width* auto‑scales the design to the current viewport.
+- **Blink mode** — auto‑flips between design and live every 0.55s, the classic onion‑skin trick for spotting misalignment.
+- **Side‑by‑side** thumbnails with an optional **loupe (4×)** that magnifies the same point in both images.
+- **Pixel diff** — adjustable threshold, perceptual match score, optional **auto‑trim** of design whitespace, and a clickable **regions list** that jumps to and highlights the differing area on the live page.
+- **Palette** — extract the dominant colors from the design, plus a **native eyedropper** for sampling any color from your screen.
 
 ### Inspect on page
 - **Layout grid** with configurable cell size, major every N cells, color and opacity. Useful for 4pt / 8pt grids.
@@ -28,6 +29,10 @@ Browser extension (Chrome / Edge, Manifest V3) that helps developers match their
 
 ### Export
 - Download the **diff PNG**, a **side‑by‑side comparison PNG**, or a single **report image** that includes design, live capture, diff and stats.
+
+### Side panel
+- **Theme switch** (Auto / Light / Dark) in the header.
+- All sliders, dropdowns and grid settings are **persisted** between sessions in `chrome.storage.local`.
 
 ### Keyboard shortcuts
 | Shortcut | Action |

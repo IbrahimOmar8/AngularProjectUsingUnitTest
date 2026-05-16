@@ -56,6 +56,7 @@ async function handleMessage(message, sender) {
     case 'GET_PAGE_METRICS':
     case 'SET_SCROLL':
     case 'HIDE_FIXED':
+    case 'HIGHLIGHT_REGION':
       return forwardToContent(message);
     case 'OVERLAY_DRAGGED':
       // Sidepanel listens for this directly via runtime.onMessage from the content script.

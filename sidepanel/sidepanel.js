@@ -1,14 +1,20 @@
 import { parseFigmaUrl } from '../lib/figma-api.js';
-import { computePixelDiff, loadImage } from '../lib/pixel-diff.js';
+import { computePixelDiff, loadImage, trimDesignWhitespace } from '../lib/pixel-diff.js';
 import { extractPalette } from '../lib/palette.js';
 import { listDesigns, saveDesign, removeDesign } from '../lib/library.js';
+
+const SETTINGS_KEY = 'fcSettings';
 
 const state = {
   designDataUrl: null,
   liveDataUrl: null,
   diffDataUrl: null,
   diffStats: null,
-  activeDesignId: null
+  diffRegions: [],
+  activeDesignId: null,
+  blinkTimer: null,
+  loupeOn: false,
+  sampledColors: []
 };
 
 function $(sel) { return document.querySelector(sel); }
@@ -318,6 +324,51 @@ $('#resetOverlay').addEventListener('click', () => {
   pushOverlayState(true);
 });
 
+$('#fitOverlay').addEventListener('click', async () => {
+  if (!state.designDataUrl) {
+    setStatus('Load a design first', 'error');
+    return;
+  }
+  try {
+    const [img, metrics] = await Promise.all([
+      loadImage(state.designDataUrl),
+      send({ type: 'GET_PAGE_METRICS' })
+    ]);
+    const innerWidth = metrics?.data?.innerWidth ?? metrics?.innerWidth;
+    if (!innerWidth) throw new Error('Could not read page width');
+    const scalePct = Math.round((innerWidth / img.naturalWidth) * 100);
+    overlayScale.value = scalePct;
+    offsetX.value = 0;
+    offsetY.value = 0;
+    pushOverlayState(true);
+    setStatus(`Fit to ${innerWidth}px (${scalePct}%)`, 'ok');
+  } catch (e) {
+    setStatus(e.message, 'error');
+  }
+});
+
+$('#blinkOverlay').addEventListener('click', () => {
+  if (state.blinkTimer) {
+    clearInterval(state.blinkTimer);
+    state.blinkTimer = null;
+    $('#blinkOverlay').textContent = 'Blink';
+    send({ type: 'SET_OVERLAY', payload: { opacity: Number(opacity.value) / 100 } }).catch(() => {});
+    return;
+  }
+  if (!state.designDataUrl) {
+    setStatus('Load a design first', 'error');
+    return;
+  }
+  pushOverlayState(true);
+  let on = true;
+  const target = Number(opacity.value) / 100 || 1;
+  $('#blinkOverlay').textContent = 'Stop blink';
+  state.blinkTimer = setInterval(() => {
+    on = !on;
+    send({ type: 'SET_OVERLAY', payload: { opacity: on ? target : 0 } }).catch(() => {});
+  }, 550);
+});
+
 // Sync inputs when user drags the overlay on the page
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === 'OVERLAY_DRAGGED') {
@@ -338,28 +389,152 @@ $('#runDiff').addEventListener('click', async () => {
   setStatus('Running diff…');
   try {
     const threshold = Number($('#diffThreshold').value);
-    const result = await computePixelDiff(state.designDataUrl, state.liveDataUrl, { threshold });
+    const autoTrim = $('#autoTrim').checked;
+    const designSrc = autoTrim ? await trimDesignWhitespace(state.designDataUrl) : state.designDataUrl;
+    const result = await computePixelDiff(designSrc, state.liveDataUrl, { threshold });
     state.diffDataUrl = result.diffDataUrl;
     state.diffStats = result;
+    state.diffRegions = result.regions || [];
     const out = $('#diffOutput');
     out.innerHTML = '';
     const img = new Image();
     img.src = result.diffDataUrl;
     out.appendChild(img);
     const pct = (result.diffRatio * 100).toFixed(2);
-    $('#diffStats').textContent = `${result.diffPixels.toLocaleString()} of ${result.totalPixels.toLocaleString()} pixels differ (${pct}%) at ${result.width}×${result.height}`;
+    const ssim = (result.perceptualScore * 100).toFixed(1);
+    $('#diffStats').textContent = `${result.diffPixels.toLocaleString()} / ${result.totalPixels.toLocaleString()} px differ (${pct}%) · perceptual match ${ssim}% · ${result.width}×${result.height}`;
     $('#exportDiff').disabled = false;
     $('#exportReport').disabled = false;
+    renderRegions(result.regions || [], result.width, result.height);
     setStatus('Diff ready', 'ok');
   } catch (e) {
     setStatus(e.message, 'error');
   }
 });
 
+function renderRegions(regions, refWidth, refHeight) {
+  const root = $('#diffRegions');
+  root.innerHTML = '';
+  if (!regions.length) return;
+  for (let i = 0; i < regions.length; i++) {
+    const r = regions[i];
+    const item = document.createElement('div');
+    item.className = 'region';
+    item.innerHTML = `
+      <span class="swatch-dot"></span>
+      <span>#${i + 1}</span>
+      <span class="geom">${r.x},${r.y} · ${r.w}×${r.h}</span>
+      <span class="pixels">${r.pixels.toLocaleString()} px</span>
+    `;
+    item.addEventListener('click', () => focusRegion(r, refWidth, refHeight));
+    root.appendChild(item);
+  }
+}
+
+async function focusRegion(region, refWidth, refHeight) {
+  try {
+    await send({
+      type: 'HIGHLIGHT_REGION',
+      payload: { region, refWidth, refHeight, durationMs: 2200 }
+    });
+    setStatus(`Highlighting region at ${region.x},${region.y}`, 'ok');
+  } catch (e) {
+    setStatus(e.message, 'error');
+  }
+}
+
 $('#exportDiff').addEventListener('click', async () => {
   if (!state.diffDataUrl) return;
   await send({ type: 'DOWNLOAD', dataUrl: state.diffDataUrl, filename: timestampedName('diff') });
 });
+
+// ===== Loupe (magnifier) =====
+
+const loupe = $('#loupe');
+const sideViewer = $('#sideViewer');
+const LOUPE_ZOOM = 4;
+const LOUPE_SIZE = 180;
+
+$('#toggleLoupe').addEventListener('click', () => {
+  state.loupeOn = !state.loupeOn;
+  $('#toggleLoupe').textContent = state.loupeOn ? 'Stop loupe' : 'Loupe (4x)';
+  loupe.hidden = !state.loupeOn;
+  if (!state.loupeOn) loupe.style.display = 'none';
+});
+
+sideViewer.addEventListener('mousemove', (e) => {
+  if (!state.loupeOn) return;
+  const designImg = $('#thumbDesign img');
+  const liveImg = $('#thumbLive img');
+  if (!designImg || !liveImg) return;
+  const dRect = designImg.getBoundingClientRect();
+  const lRect = liveImg.getBoundingClientRect();
+  const inDesign = e.clientX >= dRect.left && e.clientX <= dRect.right && e.clientY >= dRect.top && e.clientY <= dRect.bottom;
+  const inLive = e.clientX >= lRect.left && e.clientX <= lRect.right && e.clientY >= lRect.top && e.clientY <= lRect.bottom;
+  if (!inDesign && !inLive) {
+    loupe.style.display = 'none';
+    return;
+  }
+  loupe.style.display = 'block';
+  const designU = inDesign ? (e.clientX - dRect.left) / dRect.width : (e.clientX - lRect.left) / lRect.width;
+  const designV = inDesign ? (e.clientY - dRect.top) / dRect.height : (e.clientY - lRect.top) / lRect.height;
+  const dW = designImg.naturalWidth * LOUPE_ZOOM;
+  const dH = designImg.naturalHeight * LOUPE_ZOOM;
+  const lW = liveImg.naturalWidth * LOUPE_ZOOM;
+  const lH = liveImg.naturalHeight * LOUPE_ZOOM;
+  loupe.style.left = (e.clientX - LOUPE_SIZE / 2) + 'px';
+  loupe.style.top = (e.clientY - LOUPE_SIZE / 2) + 'px';
+  loupe.style.backgroundImage = `url('${state.designDataUrl}'), url('${state.liveDataUrl}')`;
+  loupe.style.setProperty('--bg-size', `${dW}px ${dH}px`);
+  loupe.style.backgroundSize = `${dW}px ${dH}px, ${lW}px ${lH}px`;
+  const dx = LOUPE_SIZE / 2 - designU * dW;
+  const dy = LOUPE_SIZE / 4 - designV * dH;
+  const lx = LOUPE_SIZE / 2 - designU * lW;
+  const ly = LOUPE_SIZE * 0.75 - designV * lH;
+  loupe.style.backgroundPosition = `${dx}px ${dy}px, ${lx}px ${ly}px`;
+  loupe.style.backgroundClip = 'padding-box';
+});
+
+sideViewer.addEventListener('mouseleave', () => { loupe.style.display = 'none'; });
+
+// ===== Eyedropper =====
+
+$('#eyedropper').addEventListener('click', async () => {
+  if (typeof window.EyeDropper !== 'function') {
+    setStatus('EyeDropper not supported in this browser', 'error');
+    return;
+  }
+  try {
+    const dropper = new EyeDropper();
+    const result = await dropper.open();
+    state.sampledColors.unshift(result.sRGBHex.toUpperCase());
+    state.sampledColors = state.sampledColors.slice(0, 12);
+    renderSampledColors();
+    setStatus(`Sampled ${result.sRGBHex.toUpperCase()}`, 'ok');
+  } catch (e) {
+    if (e?.name !== 'AbortError') setStatus(e.message, 'error');
+  }
+});
+
+function renderSampledColors() {
+  const root = $('#sampledSwatches');
+  root.innerHTML = '';
+  for (const hex of state.sampledColors) {
+    const sw = document.createElement('button');
+    sw.className = 'swatch';
+    sw.style.background = hex;
+    sw.textContent = hex;
+    sw.title = `${hex} · click to copy`;
+    sw.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(hex);
+        sw.classList.add('copied');
+        setTimeout(() => sw.classList.remove('copied'), 800);
+      } catch {}
+    });
+    root.appendChild(sw);
+  }
+}
 
 $('#exportSide').addEventListener('click', async () => {
   if (!state.designDataUrl || !state.liveDataUrl) {
@@ -507,10 +682,65 @@ $('#measureToggle').addEventListener('click', async () => {
   catch (e) { setStatus(e.message, 'error'); }
 });
 
+// ===== Theme =====
+
+function applyTheme(theme) {
+  if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  $$('.theme-btn').forEach((b) => b.classList.toggle('active', b.dataset.theme === theme));
+}
+
+$$('.theme-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    applyTheme(btn.dataset.theme);
+    saveSettings();
+  });
+});
+
+// ===== Settings persistence =====
+
+const SETTING_INPUTS = [
+  ['opacity', 'opacity', 'value'],
+  ['blendMode', 'blendMode', 'value'],
+  ['overlayScale', 'overlayScale', 'value'],
+  ['diffThreshold', 'diffThreshold', 'value'],
+  ['autoTrim', 'autoTrim', 'checked'],
+  ['gridSize', 'gridSize', 'value'],
+  ['gridMajor', 'gridMajor', 'value'],
+  ['gridColor', 'gridColor', 'value'],
+  ['gridOpacity', 'gridOpacity', 'value']
+];
+
+async function saveSettings() {
+  const out = { theme: document.documentElement.getAttribute('data-theme') || 'auto' };
+  for (const [key, id, prop] of SETTING_INPUTS) {
+    const el = document.getElementById(id);
+    if (el) out[key] = el[prop];
+  }
+  await chrome.storage.local.set({ [SETTINGS_KEY]: out });
+}
+
+async function loadSettings() {
+  const { [SETTINGS_KEY]: s } = await chrome.storage.local.get(SETTINGS_KEY);
+  if (!s) return applyTheme('auto');
+  applyTheme(s.theme || 'auto');
+  for (const [key, id, prop] of SETTING_INPUTS) {
+    const el = document.getElementById(id);
+    if (el && s[key] !== undefined) el[prop] = s[key];
+  }
+}
+
+document.addEventListener('input', (e) => {
+  const id = e.target?.id;
+  if (SETTING_INPUTS.some(([, k]) => k === id)) saveSettings();
+});
+
 // ===== Init =====
 
-refreshLibrary();
-
-if (location.hash === '#help') {
-  setStatus('1) Load a design  2) Capture the page  3) Compare. Use Alt+drag on the overlay to align.');
-}
+(async function init() {
+  await loadSettings();
+  await refreshLibrary();
+  if (location.hash === '#help') {
+    setStatus('1) Load a design  2) Capture the page  3) Compare. Use Alt+drag on the overlay to align.');
+  }
+})();

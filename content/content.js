@@ -83,6 +83,10 @@
           toggleFixedHider(message.payload?.hide === true);
           sendResponse({ ok: true });
           break;
+        case 'HIGHLIGHT_REGION':
+          highlightRegion(message.payload || {});
+          sendResponse({ ok: true });
+          break;
         default:
           sendResponse({ ok: false, error: 'Unknown message in content script' });
       }
@@ -267,6 +271,28 @@
     const h = hex.replace('#', '');
     const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
     return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+  }
+
+  // ===== Highlight a diff region =====
+
+  function highlightRegion({ region, refWidth, refHeight, durationMs = 2000 }) {
+    if (!region) return;
+    const scaleX = window.innerWidth / refWidth;
+    const scaleY = (document.documentElement.scrollHeight || window.innerHeight) / refHeight;
+    const x = region.x * scaleX;
+    const y = region.y * scaleY;
+    const w = region.w * scaleX;
+    const h = region.h * scaleY;
+    window.scrollTo({ left: 0, top: Math.max(0, y - window.innerHeight / 3), behavior: 'smooth' });
+
+    const marker = document.createElement('div');
+    marker.className = 'fc-region-marker';
+    marker.style.left = (x + window.scrollX) + 'px';
+    marker.style.top = (y + window.scrollY) + 'px';
+    marker.style.width = w + 'px';
+    marker.style.height = h + 'px';
+    document.documentElement.appendChild(marker);
+    setTimeout(() => marker.remove(), durationMs);
   }
 
   // ===== Fixed-element hider (for full-page screenshots) =====
