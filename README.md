@@ -1,27 +1,68 @@
-# MyApp
+# Figma UI Compare
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 11.0.6.
+Browser extension (Chrome / Edge, Manifest V3) that helps developers match their live UI to a Figma design.
 
-## Development server
+## Features
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+- **Load the design** in two ways:
+  - Upload a PNG/JPG exported from Figma.
+  - Paste a Figma frame URL + personal access token — the extension pulls the rendered PNG through the Figma REST API.
+- **Capture the current tab** as a screenshot from the side panel.
+- **Compare modes**:
+  - **Overlay** the design over the live page with opacity, blend mode, offset and scale controls.
+  - **Side-by-side** thumbnails of design and capture.
+  - **Pixel diff** — highlights differing pixels in magenta with a per-pixel threshold and reports the diff ratio.
+- **Measure tool** that injects into the page: hover any element to see size, padding, margin and font; click two points to measure distance and angle.
 
-## Code scaffolding
+## Install (unpacked)
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+1. Open `chrome://extensions` (or `edge://extensions`).
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and pick this repository folder.
+4. Pin the *Figma UI Compare* action to your toolbar.
 
-## Build
+## Usage
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+1. Open the page you are building.
+2. Click the extension icon and choose **Open compare panel** (opens the side panel).
+3. **Step 1 — Load the design**:
+   - *Upload image*: drop the exported PNG/JPG.
+   - *Figma API*:
+     - Create a personal access token at `figma.com → Settings → Personal access tokens`.
+     - In Figma, select the frame, right‑click → **Copy link to selection**. Paste the URL.
+     - Click **Fetch from Figma**.
+4. **Step 2 — Capture the live UI**: click **Capture current tab**.
+5. **Step 3 — Compare**: switch between *Overlay*, *Side by side* and *Pixel diff*.
+6. **Step 4 — Measure**: click **Enable measure tool** to inspect spacing and sizes on the live page. Press **Esc** to exit.
 
-## Running unit tests
+## Project structure
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+```
+manifest.json              # MV3 manifest
+background/
+  service-worker.js        # Routing, screenshot capture, Figma proxy
+content/
+  content.js               # Page overlay + measurement tool
+  content.css
+popup/                     # Toolbar popup
+sidepanel/                 # Main UI (Chrome side panel)
+lib/
+  figma-api.js             # Figma REST helpers
+  pixel-diff.js            # Canvas-based pixel diff
+icons/                     # 16/48/128 PNG icons
+```
 
-## Running end-to-end tests
+## Permissions
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+| Permission | Why |
+|---|---|
+| `activeTab`, `tabs`, `scripting` | Send overlay / measurement commands to the active page. |
+| `storage` | Persist Figma token and last‑used URL locally. |
+| `sidePanel` | Host the main UI. |
+| `host_permissions` | Capture the visible tab and call `api.figma.com`. |
 
-## Further help
+The Figma token is stored only in `chrome.storage.local`. It is never sent anywhere except `api.figma.com`.
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+## Privacy
+
+No analytics. No external server. Screenshots and design images never leave your machine — diffs run locally in the side‑panel canvas.

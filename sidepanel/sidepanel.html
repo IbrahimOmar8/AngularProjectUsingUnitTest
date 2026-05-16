@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Figma UI Compare</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Figma UI Compare</h1>
+        <p class="muted">Bring your build closer to the design</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="card">
+    <h2>1. Load the design</h2>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="upload" role="tab">Upload image</button>
+      <button class="tab" data-tab="figma" role="tab">Figma API</button>
+    </div>
+
+    <div class="tab-panel" data-panel="upload">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*" hidden />
+        <span>Drop a PNG/JPG here, or click to choose</span>
+        <span class="muted small">Export the frame from Figma at 2x for best results</span>
+      </label>
+    </div>
+
+    <div class="tab-panel hidden" data-panel="figma">
+      <label class="field">
+        <span>Figma frame URL</span>
+        <input id="figmaUrl" type="url" placeholder="https://www.figma.com/design/FILE_KEY/...?node-id=1-2" />
+      </label>
+      <label class="field">
+        <span>Personal access token</span>
+        <input id="figmaToken" type="password" placeholder="figd_..." autocomplete="off" />
+        <small class="muted">Create one at figma.com → Settings → Personal access tokens. Stored locally only.</small>
+      </label>
+      <label class="field row">
+        <span>Render scale</span>
+        <select id="figmaScale">
+          <option value="1">1x</option>
+          <option value="2" selected>2x</option>
+          <option value="3">3x</option>
+          <option value="4">4x</option>
+        </select>
+      </label>
+      <button id="fetchFigma" class="primary">Fetch from Figma</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Capture the live UI</h2>
+    <div class="row gap">
+      <button id="captureBtn" class="primary">Capture current tab</button>
+      <button id="reloadCapture" class="ghost" disabled>Re-capture</button>
+    </div>
+    <p class="muted small" id="captureStatus">No capture yet.</p>
+  </section>
+
+  <section class="card">
+    <h2>3. Compare</h2>
+
+    <div class="modes" role="tablist">
+      <button class="tab active" data-mode="overlay">Overlay</button>
+      <button class="tab" data-mode="side">Side by side</button>
+      <button class="tab" data-mode="diff">Pixel diff</button>
+    </div>
+
+    <div class="mode-panel" data-mode-panel="overlay">
+      <div class="row gap small-row">
+        <label class="field grow">
+          <span>Design opacity</span>
+          <input id="opacity" type="range" min="0" max="100" value="50" />
+        </label>
+        <label class="field">
+          <span>Blend</span>
+          <select id="blendMode">
+            <option value="normal">Normal</option>
+            <option value="difference" selected>Difference</option>
+            <option value="multiply">Multiply</option>
+            <option value="screen">Screen</option>
+            <option value="overlay">Overlay</option>
+          </select>
+        </label>
+      </div>
+      <div class="row gap small-row">
+        <label class="field">
+          <span>Offset X</span>
+          <input id="offsetX" type="number" value="0" />
+        </label>
+        <label class="field">
+          <span>Offset Y</span>
+          <input id="offsetY" type="number" value="0" />
+        </label>
+        <label class="field">
+          <span>Scale</span>
+          <input id="overlayScale" type="number" value="100" min="10" max="400" />
+        </label>
+      </div>
+      <div class="row gap">
+        <button id="pushOverlay" class="primary">Show on page</button>
+        <button id="hideOverlay" class="ghost">Hide</button>
+      </div>
+    </div>
+
+    <div class="mode-panel hidden" data-mode-panel="side">
+      <div class="side-by-side">
+        <figure>
+          <figcaption>Design</figcaption>
+          <div class="thumb" id="thumbDesign"><span class="muted small">No design</span></div>
+        </figure>
+        <figure>
+          <figcaption>Live</figcaption>
+          <div class="thumb" id="thumbLive"><span class="muted small">No capture</span></div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="mode-panel hidden" data-mode-panel="diff">
+      <div class="row gap small-row">
+        <label class="field grow">
+          <span>Threshold</span>
+          <input id="diffThreshold" type="range" min="0" max="200" value="32" />
+        </label>
+        <button id="runDiff" class="primary">Run diff</button>
+      </div>
+      <div class="thumb tall" id="diffOutput"><span class="muted small">Run a diff to see differences</span></div>
+      <p class="muted small" id="diffStats"></p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4. Measure on page</h2>
+    <p class="muted small">Hover elements to see padding, margin and size. Click two points to measure distance.</p>
+    <div class="row gap">
+      <button id="measureToggle" class="primary">Enable measure tool</button>
+    </div>
+  </section>
+
+  <footer class="topbar">
+    <span class="muted small">v1.0.0</span>
+    <span class="muted small" id="statusBar"></span>
+  </footer>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
