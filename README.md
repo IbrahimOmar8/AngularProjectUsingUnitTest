@@ -2,6 +2,8 @@
 
 Browser extension (Chrome / Edge, Manifest V3) that helps developers match their live UI to a Figma design.
 
+> **Looking for a step‑by‑step walkthrough?** See **[USAGE.md](./USAGE.md)** — installation, every feature, screenshots‑in‑words, troubleshooting, and FAQ.
+
 ## Features
 
 ### Load the design
