@@ -23,6 +23,28 @@
   }
 }
 
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --card: #fafafa;
+  --fg: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #5b5bd6;
+  --accent-fg: #ffffff;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f0f12;
+  --card: #16161b;
+  --fg: #f5f5f7;
+  --muted: #9ca3af;
+  --border: #25252c;
+  --accent: #8585ff;
+  --accent-fg: #0a0a0c;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -312,3 +334,96 @@ kbd {
   padding: 1px 5px;
   font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+.theme-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.theme-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.theme-btn.active {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.regions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.regions:empty { display: none; }
+
+.region {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  background: var(--bg);
+}
+
+.region:hover { border-color: var(--accent); }
+
+.region .swatch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+}
+
+.region .geom { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.region .pixels { color: var(--muted); margin-left: auto; }
+
+.side-by-side {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.loupe {
+  position: fixed;
+  width: 180px;
+  height: 180px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 50;
+  background-repeat: no-repeat, no-repeat;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.4);
+}
+
+.loupe::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 0 0;
+  border-top: 1px dashed rgba(255,255,255,0.5);
+}
+
+label.field.row.tight {
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+label.field.row.tight > span { color: var(--fg); font-size: 12px; }
+

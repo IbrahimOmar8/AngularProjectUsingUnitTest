@@ -14,6 +14,11 @@
         <p class="muted">Bring your build closer to the design</p>
       </div>
     </div>
+    <div class="theme-switch" role="radiogroup" aria-label="Theme">
+      <button class="theme-btn" data-theme="auto" title="Auto theme">A</button>
+      <button class="theme-btn" data-theme="light" title="Light theme">☀</button>
+      <button class="theme-btn" data-theme="dark" title="Dark theme">☾</button>
+    </div>
   </header>
 
   <section class="card">
@@ -136,13 +141,15 @@
       <div class="row gap">
         <button id="pushOverlay" class="primary">Show on page</button>
         <button id="hideOverlay" class="ghost">Hide</button>
-        <button id="resetOverlay" class="ghost">Reset position</button>
+        <button id="fitOverlay" class="ghost">Fit to width</button>
+        <button id="resetOverlay" class="ghost">Reset</button>
+        <button id="blinkOverlay" class="ghost">Blink</button>
       </div>
-      <p class="muted small">Tip: hold <kbd>Alt</kbd> and drag the overlay on the page to nudge it. <kbd>Alt</kbd>+scroll to zoom.</p>
+      <p class="muted small">Tip: hold <kbd>Alt</kbd> and drag the overlay on the page to nudge it. <kbd>Alt</kbd>+scroll to zoom. <em>Blink</em> alternates between design and live to spot misalignment.</p>
     </div>
 
     <div class="mode-panel hidden" data-mode-panel="side">
-      <div class="side-by-side">
+      <div class="side-by-side" id="sideViewer">
         <figure>
           <figcaption>Design</figcaption>
           <div class="thumb" id="thumbDesign"><span class="muted small">No design</span></div>
@@ -151,8 +158,10 @@
           <figcaption>Live</figcaption>
           <div class="thumb" id="thumbLive"><span class="muted small">No capture</span></div>
         </figure>
+        <div class="loupe" id="loupe" hidden></div>
       </div>
       <div class="row gap">
+        <button id="toggleLoupe">Loupe (4x)</button>
         <button id="exportSide">Export side-by-side PNG</button>
       </div>
     </div>
@@ -163,10 +172,15 @@
           <span>Threshold</span>
           <input id="diffThreshold" type="range" min="0" max="200" value="32" />
         </label>
+        <label class="field row tight">
+          <input id="autoTrim" type="checkbox" />
+          <span>Auto-trim</span>
+        </label>
         <button id="runDiff" class="primary">Run diff</button>
       </div>
       <div class="thumb tall" id="diffOutput"><span class="muted small">Run a diff to see differences</span></div>
       <p class="muted small" id="diffStats"></p>
+      <div id="diffRegions" class="regions"></div>
       <div class="row gap">
         <button id="exportDiff" disabled>Export diff PNG</button>
         <button id="exportReport" disabled>Export report</button>
@@ -176,7 +190,12 @@
     <div class="mode-panel hidden" data-mode-panel="palette">
       <p class="muted small">Dominant colors from the design — click a swatch to copy hex.</p>
       <div id="paletteSwatches" class="palette"></div>
-      <button id="extractPalette">Extract palette</button>
+      <div class="row gap">
+        <button id="extractPalette" class="primary">Extract from design</button>
+        <button id="eyedropper">Sample with eyedropper</button>
+      </div>
+      <p class="muted small" id="sampledLabel">Sampled colors:</p>
+      <div id="sampledSwatches" class="palette"></div>
     </div>
   </section>
 
@@ -225,7 +244,7 @@
   </section>
 
   <footer class="topbar">
-    <span class="muted small">v1.1.0</span>
+    <span class="muted small">v1.2.0</span>
     <span class="muted small" id="statusBar"></span>
   </footer>
 
