@@ -81,8 +81,7 @@ See README.md and USAGE.md for installation and a full walkthrough.
      - `storage`, `unlimitedStorage` → *Save the Figma personal access token and the local library of designs on the user's device.*
      - `sidePanel` → *Host the main comparison UI.*
      - `downloads` → *Save diff, side-by-side, and report PNGs to disk.*
-     - `host_permissions: <all_urls>` → *Capture the visible tab and overlay the design on the user's site under test.*
-     - `host_permissions: api.figma.com` → *Fetch rendered frames from the Figma REST API when the user provides a token.*
+     - `host_permissions: <all_urls>` → *Capture the visible tab and overlay the design on the user's site under test, and fetch the rendered Figma frame from the time-limited image URL the Figma REST API returns (served from a Figma S3 host that varies per request).*
    - **Data usage:** select *Does not collect any user data*. Confirm none of the checkboxes for collected data types.
    - **Disclosure on remote code:** *No remote code used.*
 6. **Distribution:**
